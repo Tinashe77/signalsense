@@ -1,252 +1,296 @@
-// src/pages/Login.jsx - Updated for Econet Victoria Falls Marathon
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Radio, Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import logo from '../assets/logo.png';
-import vicFalls from '../assets/vicfalls.jpg';
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import { initModalManager, showError } from '../utils/modalManager';
+
+const colors = {
+  primary: '#283eae',
+  secondary: '#5371e9',
+  accent: '#36c1ce',
+  warning: '#f5a135'
+};
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [error, setError] = useState('');
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    organization: '',
+    role: 'analyst'
+  });
 
-  useEffect(() => {
-    initModalManager();
-    
-    // Add CSS animation for zoom effect
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slowZoom {
-        0% {
-          transform: scale(1);
-        }
-        100% {
-          transform: scale(1.1);
-        }
-      }
-      .zoom-animation {
-        animation: slowZoom 20s ease-in-out infinite alternate;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      setError('');
-      setLoading(true);
-      await login(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Login error in component:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
-      
-      // Show error modal for network errors
-      if (err.message.includes('Unable to connect') || err.message.includes('Network Error')) {
-        showError(err.message, 'Connection Error');
+      let result;
+      if (isLogin) {
+        result = await login(formData.email, formData.password);
+      } else {
+        result = await register(formData);
       }
+
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Left side - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="w-4/5 max-w-lg bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
-          {/* Logo and Header */}
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-6">
-              <img 
-                src={logo} 
-                alt="Econet Victoria Falls Marathon" 
-                className="h-48 w-auto" 
-              />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Login</h2>
-            <p className="text-sm text-gray-600">
-              Access your marathon management dashboard
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Logo and Header */}
+        <div className="text-center mb-8">
+          <div 
+            className="w-16 h-16 rounded-3xl flex items-center justify-center text-white mx-auto mb-4"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Radio className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">SignalSense</h1>
+          <p className="text-gray-600">AI-Powered Audience Measurement for Zimbabwe</p>
+        </div>
+
+        {/* Auth Form */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {/* Tab Switcher */}
+          <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                isLogin 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                !isLogin 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
-          {/* Error Display */}
+          {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center space-x-2">
-              <ExclamationCircleIcon className="h-5 w-5 text-red-400 flex-shrink-0" />
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
               <span className="text-sm text-red-700">{error}</span>
             </div>
           )}
 
-          {/* Login Form */}
-          <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name field (register only) */}
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required={!isLogin}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Enter your full name"
+                />
+              </div>
+            )}
+
+            {/* Email field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 sm:text-sm"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ borderColor: '#0067a5' }}
-                onFocus={(e) => e.target.style.borderColor = '#0067a5'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
-            
+
+            {/* Password field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 sm:text-sm"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ borderColor: '#0067a5' }}
-                onFocus={(e) => e.target.style.borderColor = '#0067a5'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-              />
-            </div>
-
-            {/* Remember Me and Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 focus:ring-2"
-                  style={{ accentColor: '#0067a5' }}
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full pl-11 pr-11 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Enter your password"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
-              <div className="text-sm">
-                <a href="#" className="font-medium hover:underline" style={{ color: '#0067a5' }}>
-                  Forgot password?
-                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 
-            {/* Login Button */}
-            <div>
+            {/* Organization field (register only) */}
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Organization (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="organization"
+                  value={formData.organization}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="Your organization name"
+                />
+              </div>
+            )}
+
+            {/* Role field (register only) */}
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="analyst">Analyst</option>
+                  <option value="broadcaster">Broadcaster</option>
+                  <option value="advertiser">Advertiser</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 rounded-xl text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: colors.primary }}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+                </div>
+              ) : (
+                isLogin ? 'Sign In' : 'Create Account'
+              )}
+            </button>
+          </form>
+
+          {/* Demo Credentials */}
+          {isLogin && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h4>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p><strong>Email:</strong> admin@signalsense.co.zw</p>
+                <p><strong>Password:</strong> admin123</p>
+              </div>
               <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                style={{ 
-                  backgroundColor: '#0067a5',
-                  ':hover': { backgroundColor: '#005a94' }
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    email: 'admin@signalsense.co.zw',
+                    password: 'admin123'
+                  });
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#005a94'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#0067a5'}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Logging in...
-                  </div>
-                ) : (
-                  'Login'
-                )}
+                Use Demo Credentials
               </button>
             </div>
+          )}
 
-            {/* Additional Info */}
-            <div className="text-center">
-              <p className="text-xs text-gray-500">
-                Secure access to Victoria Falls Marathon management
-              </p>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Right side - Victoria Falls Image with Logo */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
-        {/* Victoria Falls Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${vicFalls})`,
-            filter: 'brightness(0.7)',
-            animation: 'slowZoom 15s ease-in-out infinite alternate',
-          }}
-        >
-          {/* Gradient Overlay for better contrast */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(135deg, 
-                rgba(0, 103, 165, 0.2) 0%, 
-                rgba(111, 183, 227, 0.15) 50%, 
-                rgba(107, 185, 68, 0.2) 100%)`
-            }}
-          ></div>
-        </div>
-
-        {/* Centered Logo with Glass Effect */}
-       
-
-        {/* Bottom text overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent p-8">
-          <div className="text-white">
-            <h3 className="text-2xl font-bold mb-2">
-              Experience the Thunder
-            </h3>
-            <p className="text-lg opacity-90 mb-4">
-              Victoria Falls Marathon - Where adventure meets endurance
-            </p>
-            <div className="flex items-center space-x-4 text-sm opacity-80">
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#6bb944' }}></div>
-                <span>Zimbabwe</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#6fb7e3' }}></div>
-                <span>Victoria Falls</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#0067a5' }}></div>
-                <span>Marathon</span>
-              </div>
-            </div>
+          {/* Footer */}
+          <div className="mt-6 text-center text-sm text-gray-500">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="font-medium hover:underline"
+              style={{ color: colors.primary }}
+            >
+              {isLogin ? 'Sign up here' : 'Sign in here'}
+            </button>
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute top-1/2 right-8 transform -translate-y-1/2">
-          <div className="w-1 h-20 rounded-full opacity-60" style={{ backgroundColor: '#6fb7e3' }}></div>
-        </div>
-        <div className="absolute top-1/3 right-12 transform -translate-y-1/2">
-          <div className="w-1 h-12 rounded-full opacity-40" style={{ backgroundColor: '#6bb944' }}></div>
+        {/* Features */}
+        <div className="mt-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: colors.accent }}
+              ></div>
+              <span>Real-time Analytics</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: colors.secondary }}
+              ></div>
+              <span>AI-Powered Insights</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: colors.warning }}
+              ></div>
+              <span>Zimbabwe-Focused</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
